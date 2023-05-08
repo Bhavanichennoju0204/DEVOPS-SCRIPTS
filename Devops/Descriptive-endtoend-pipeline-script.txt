@@ -1,0 +1,67 @@
+node {
+    stage ("stage1") {
+        echo "this is first line"
+    }
+}
+
+node {
+    stage ("code") {
+       git "https://github.com/Bhavanichennoju0204/webcode.git"
+    }
+}
+node {
+    stage ("build") {
+       sh "mvn clean package"  -- if maven installed in CI server
+    }
+}
+
+
+Global Tool Configuration --> Maven --> Add Maven 
+
+Name  -- maven (or any other)
+Verion -- 3.8.6
+
+
+def mavenHome = tool name:"maven", type:"maven"
+def mavenCMD = "${mavenHome}/bin/mvn"
+sh "${mavenCMD} clean package" 
+
+
+node {
+    stage ("code") {
+       git "https://github.com/Bhavanichennoju0204/webcode.git"
+    }
+}
+node {
+    stage ("build") {
+       def mavenHome = tool name:"maven", type:"maven"
+       def mavenCMD = "${mavenHome}/bin/mvn"
+       sh "${mavenCMD} clean package" 
+    }
+}
+node {
+    stage ("test") {
+        withSonarQubeEnv("mysonar") {
+       def mavenHome = tool name:"maven", type:"maven"
+       def mavenCMD = "${mavenHome}/bin/mvn"
+       sh "${mavenCMD} sonar:sonar" 
+       }
+    }
+}
+
+
+node {
+    stage ("artifact") {
+        nexusArtifactUploader artifacts: [[artifactId: 'myweb', classifier: '', file: 'target/myweb-8.3.7.war', type: '.war']], credentialsId: 'f3ccfc69-f025-47f8-83c4-990f028662a4', groupId: 'in.javahome', nexusUrl: '3.110.177.252:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'myrepo', version: '8.3.7'
+    }
+}
+
+node {
+    stage ("deploy") {
+        sshagent(['ec2-user']) {
+          sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/jenkins-project/target/myweb-8.3.7.war ec2-user@65.2.169.18:/opt/apache-tomcat-9.0.74/webapps/"
+     }
+    }
+}
+
+

@@ -1,0 +1,38 @@
+amazon-linux-extras install java-openjdk11 -y
+cd /opt
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-8.9.6.50800.zip
+unzip sonarqube-8.9.6.50800.zip
+useradd sonar
+chown sonar:sonar -R sonarqube-8.9.6.50800
+chmod 777 -R sonarqube-8.9.6.50800
+su - sonar
+cd /opt/sonarqube-8.9.6.50800/bin/linux-x86-64
+./sonar.sh start
+./sonar.sh status
+
+connect with publicip:9000
+
+login with
+username : admin
+password : admin (default)
+
+Myaccount >> security >>  generate token  -- 5542f033b55839f12c5d61adfc2d002ec647f3ff
+to configure in jenkins --
+Manage jenkins >> Configure System >> SonarQube servers >> add sonarqube
+
+Name -- any
+Serverurl --http://publicip:9000
+Add credentials --> secret text --> add generated token
+
+SonarQube Scanner - plugin in jenkins
+SSH Agent
+
+node {
+    stage ("build") {
+        withSonarQubeEnv("mysonar") {
+       def mavenHome = tool name:"maven", type:"maven"
+       def mavenCMD = "${mavenHome}/bin/mvn"
+       sh "${mavenCMD} sonar:sonar" 
+       }
+    }
+}
