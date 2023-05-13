@@ -1,0 +1,36 @@
+---
+- hosts: dev
+  connection: ssh
+
+  tasks:
+  - name: create directory
+    file:
+      path: /tomcat
+      state: directory
+  - name: download tomcat
+    get_url:
+      url: "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.75/bin/apache-tomcat-9.0.75.tar.gz"
+      dest: /tomcat/tomcat.gz
+  - name: unzip
+    command: tar -zxvf /tomcat/tomcat.gz -C /tomcat/
+
+  - name: rename
+    command: mv /tomcat/apache-tomcat-9.0.75 /tomcat/tomcat
+
+  - name: install dependencies
+    command: amazon-linux-extras install java-openjdk11 -y
+
+  - name: copy context.xml file
+    template:
+      src: /root/ansible/templates/context.xml
+      dest: /tomcat/tomcat/webapps/manager/META-INF/context.xml
+
+  - name: copy tomcat-users file
+    template:
+      src: /root/ansible/templates/tomcat-users.xml
+      dest: /tomcat/tomcat/conf/tomcat-users.xml
+
+
+  - name: start tomcat
+    shell: nohup /tomcat/tomcat/bin/startup.sh
+ ...
